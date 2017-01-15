@@ -3,9 +3,9 @@ local channelMover = FH3095_getChannelMover()
 
 channelMover.const.menuIDs = {
 	MOVE_ALL_FROM_CHANNEL_TO_MY_CHANNEL = 1,
-	MOVE_ALL_TO_MY_CHANNEL = 2,
+	MOVE_ALL_FROM_MY_CHANNEL_TO_CHANNEL = 2,
+	MOVE_ALL_TO_MY_CHANNEL = 3,
 }
-channelMover.var.menuItemID = 0
 
 function channelMover:printMsg(msg)
 	ts3.printMessage(ts3.getCurrentServerConnectionHandlerID(), self.const.MODULE_NAME .. ": " .. msg, 1)
@@ -96,10 +96,7 @@ end
 function channelMover:onChannelMenuItemEvent(serverConnectionHandlerID, menuType, menuItemID, selectedItemID)
 	self:debugMsg("ChannelMenuItemEvent: " .. serverConnectionHandlerID .. " , " .. menuType .. " , " .. menuItemID .. " , " .. selectedItemID)
 
-	if menuItemID == self.const.menuIDs.MOVE_ALL_FROM_CHANNEL_TO_MY_CHANNEL then
-		local function getClientsFunc(_)
-			return ts3.getChannelClientList(serverConnectionHandlerID, selectedItemID)
-		end
+	if menuItemID == self.const.menuIDs.MOVE_ALL_FROM_CHANNEL_TO_MY_CHANNEL or menuItemID == self.const.menuIDs.MOVE_ALL_FROM_MY_CHANNEL_TO_CHANNEL then
 		local myClientID = self:getMyClientID(serverConnectionHandlerID)
 		local myChannelID = self:getMyChannelID(serverConnectionHandlerID,myClientID)
 
@@ -107,7 +104,18 @@ function channelMover:onChannelMenuItemEvent(serverConnectionHandlerID, menuType
 			self:printMsg("Can't move users from your channel into your channel.")
 			return
 		end
-		self:moveUsers(serverConnectionHandlerID,myChannelID,getClientsFunc)
+
+		if menuItemID == self.const.menuIDs.MOVE_ALL_FROM_CHANNEL_TO_MY_CHANNEL then
+			local function getClientsFunc(_)
+				return ts3.getChannelClientList(serverConnectionHandlerID, selectedItemID)
+			end
+			self:moveUsers(serverConnectionHandlerID, myChannelID, getClientsFunc)
+		elseif menuItemID == self.const.menuIDs.MOVE_ALL_FROM_MY_CHANNEL_TO_CHANNEL then
+			local function getClientsFunc(_)
+				return ts3.getChannelClientList(serverConnectionHandlerID, myChannelID)
+			end
+			self:moveUsers(serverConnectionHandlerID, selectedItemID, getClientsFunc)
+		end
 	end
 end
 
@@ -141,10 +149,10 @@ end
 function channelMover.onCreateMenus(moduleMenuItemID)
 	local self = channelMover
 	self:debugMsg("Register Menu with moduleID " .. moduleMenuItemID)
-	self.var.menuItemID = moduleMenuItemID
 
 	return {
-		{ts3defs.PluginMenuType.PLUGIN_MENU_TYPE_CHANNEL, self.const.menuIDs.MOVE_ALL_FROM_CHANNEL_TO_MY_CHANNEL, "Move all from this channel to my channel", self.const.MODULE_FOLDER .. "/move_channel.png",},
+		{ts3defs.PluginMenuType.PLUGIN_MENU_TYPE_CHANNEL, self.const.menuIDs.MOVE_ALL_FROM_CHANNEL_TO_MY_CHANNEL, "Move all from this channel to my channel", self.const.MODULE_FOLDER .. "/move_from_to_my_channel.png",},
+		{ts3defs.PluginMenuType.PLUGIN_MENU_TYPE_CHANNEL, self.const.menuIDs.MOVE_ALL_FROM_MY_CHANNEL_TO_CHANNEL, "Move all from my channel to this channel", self.const.MODULE_FOLDER .. "/move_from_my_to_channel.png",},
 		{ts3defs.PluginMenuType.PLUGIN_MENU_TYPE_GLOBAL, self.const.menuIDs.MOVE_ALL_TO_MY_CHANNEL, "Move all to my channel", self.const.MODULE_FOLDER .. "/move_all.png",},
 	}
 end
